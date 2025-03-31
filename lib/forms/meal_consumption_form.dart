@@ -90,22 +90,24 @@ class MealConsumptionForm extends ConsumerWidget {
           },
         ),
         const SizedBox(height: 16),
-        Row(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Bewertung: '),
-            const SizedBox(width: 8),
-            Row(
-              children: List.generate(
-                  5,
-                  (index) => IconButton(
-                        icon: Icon(
-                          Icons.star,
-                          color: index < formState.rating
-                              ? Colors.amber
-                              : Colors.grey,
-                        ),
-                        onPressed: () => notifier.setRating(index + 1),
-                      )),
+            Text(
+              'Bewertung: ${formState.rating}/10',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Slider(
+              value: formState.rating.toDouble(),
+              min: 0,
+              max: 10,
+              divisions: 10,
+              label: '${formState.rating}',
+              onChanged: (double value) => notifier.setRating(value.round()),
+              activeColor: Theme.of(context).colorScheme.primary,
+              inactiveColor:
+                  Theme.of(context).colorScheme.primary.withOpacity(0.3),
             ),
           ],
         ),

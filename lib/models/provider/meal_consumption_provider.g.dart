@@ -162,7 +162,7 @@ class _MealConsumptionsForMealProviderElement
   String? get mealId => (origin as MealConsumptionsForMealProvider).mealId;
 }
 
-String _$mealConsumptionsHash() => r'44f88f4b2e9c8875dbd3efe8b6950fd05c292faa';
+String _$mealConsumptionsHash() => r'182fbab2f5d7a82c32df799d5dc9d96ff063e289';
 
 /// See also [MealConsumptions].
 @ProviderFor(MealConsumptions)

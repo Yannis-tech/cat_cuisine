@@ -8,11 +8,12 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: 'https://qxakcesyialdfflfeoid.supabase.co',
-    anonKey: 'hidden',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4YWtjZXN5aWFsZGZmbGZlb2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTg4MTA2NzUsImV4cCI6MjAzNDM4NjY3NX0.nMyNgHlJBzkMsHjNXP7uZWD_JxzPtbUrdfq934VdBWU',
   );
 
   runApp(
-    ProviderScope(
+    const ProviderScope(
       child: MyApp(),
     ),
   );

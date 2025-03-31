@@ -6,7 +6,7 @@ part of 'meal_form_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$mealFormHash() => r'beb216c8658a451015607a58c80db60e82b11b91';
+String _$mealFormHash() => r'c524cad44e1cddb1dd909165b955a8124820cfdc';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,10 +29,11 @@ class _SystemHash {
   }
 }
 
-abstract class _$MealForm extends BuildlessAutoDisposeNotifier<MealFormState> {
+abstract class _$MealForm
+    extends BuildlessAutoDisposeAsyncNotifier<MealFormState> {
   late final MealModel? initialMeal;
 
-  MealFormState build(
+  FutureOr<MealFormState> build(
     MealModel? initialMeal,
   );
 }
@@ -42,7 +43,7 @@ abstract class _$MealForm extends BuildlessAutoDisposeNotifier<MealFormState> {
 const mealFormProvider = MealFormFamily();
 
 /// See also [MealForm].
-class MealFormFamily extends Family<MealFormState> {
+class MealFormFamily extends Family<AsyncValue<MealFormState>> {
   /// See also [MealForm].
   const MealFormFamily();
 
@@ -81,7 +82,7 @@ class MealFormFamily extends Family<MealFormState> {
 
 /// See also [MealForm].
 class MealFormProvider
-    extends AutoDisposeNotifierProviderImpl<MealForm, MealFormState> {
+    extends AutoDisposeAsyncNotifierProviderImpl<MealForm, MealFormState> {
   /// See also [MealForm].
   MealFormProvider(
     MealModel? initialMeal,
@@ -111,7 +112,7 @@ class MealFormProvider
   final MealModel? initialMeal;
 
   @override
-  MealFormState runNotifierBuild(
+  FutureOr<MealFormState> runNotifierBuild(
     covariant MealForm notifier,
   ) {
     return notifier.build(
@@ -136,7 +137,8 @@ class MealFormProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<MealForm, MealFormState> createElement() {
+  AutoDisposeAsyncNotifierProviderElement<MealForm, MealFormState>
+      createElement() {
     return _MealFormProviderElement(this);
   }
 
@@ -154,13 +156,13 @@ class MealFormProvider
   }
 }
 
-mixin MealFormRef on AutoDisposeNotifierProviderRef<MealFormState> {
+mixin MealFormRef on AutoDisposeAsyncNotifierProviderRef<MealFormState> {
   /// The parameter `initialMeal` of this provider.
   MealModel? get initialMeal;
 }
 
 class _MealFormProviderElement
-    extends AutoDisposeNotifierProviderElement<MealForm, MealFormState>
+    extends AutoDisposeAsyncNotifierProviderElement<MealForm, MealFormState>
     with MealFormRef {
   _MealFormProviderElement(super.provider);
 

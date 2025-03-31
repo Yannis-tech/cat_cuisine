@@ -103,7 +103,7 @@ class MealConsumptionForm extends _$MealConsumptionForm {
   }
 
   void setRating(int rating) {
-    if (rating >= 0 && rating <= 5) {
+    if (rating >= 0 && rating <= 10) {
       state = state.copyWith(rating: rating);
     }
   }

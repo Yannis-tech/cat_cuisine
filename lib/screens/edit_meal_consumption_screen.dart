@@ -108,17 +108,23 @@ class _ConsumptionTab extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
-          Row(
-            children: List.generate(
-              5,
-              (index) => IconButton(
-                icon: Icon(
-                  index < formState.rating ? Icons.star : Icons.star_border,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                onPressed: () => notifier.setRating(index + 1),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Bewertung: ${formState.rating}/10',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-            ),
+              const SizedBox(height: 8),
+              Slider(
+                value: formState.rating.toDouble(),
+                min: 0,
+                max: 10,
+                divisions: 10,
+                label: '${formState.rating}',
+                onChanged: (double value) => notifier.setRating(value.round()),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           ElevatedButton(

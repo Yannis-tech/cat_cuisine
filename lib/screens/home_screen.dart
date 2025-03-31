@@ -110,18 +110,25 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       body: mealsAsyncValue.when(
         data: (meals) {
-          final recentMeals = meals.where((meal) {
-            final daysAgo = DateTime.now().difference(meal.createdAt).inDays;
-            return daysAgo <= 7;
-          }).toList();
+          const int minMealsForFiltering = 10;
 
-          recentMeals.sort((a, b) => b.timeOfDay.compareTo(a.timeOfDay));
+          final List<MealModel> displayedMeals;
+          if (meals.length > minMealsForFiltering) {
+            displayedMeals = meals.where((meal) {
+              final daysAgo = DateTime.now().difference(meal.createdAt).inDays;
+              return daysAgo <= 7;
+            }).toList();
+          } else {
+            displayedMeals = meals;
+          }
+
+          displayedMeals.sort((a, b) => b.timeOfDay.compareTo(a.timeOfDay));
 
           return ListView.builder(
             padding: const EdgeInsets.all(16.0),
-            itemCount: recentMeals.length,
+            itemCount: displayedMeals.length,
             itemBuilder: (context, index) {
-              final meal = recentMeals[index];
+              final meal = displayedMeals[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: _buildMealCard(context, meal, ref),
@@ -311,7 +318,6 @@ class HomeScreen extends ConsumerWidget {
     }
 
     Widget buildCatConsumption(_ConsumptionInfo info, CatModel cat) {
-      // Add CatModel parameter
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -344,7 +350,7 @@ class HomeScreen extends ConsumerWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
-            _buildRatingStars(context, info.rating),
+            _buildRatingIndicator(context, info.rating),
           ],
         ),
       );
@@ -413,16 +419,49 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRatingStars(BuildContext context, int rating) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        return Icon(
-          index < rating ? Icons.star : Icons.star_border,
-          size: 16,
-          color: Theme.of(context).colorScheme.primary,
-        );
-      }),
+  Widget _buildRatingIndicator(BuildContext context, int rating) {
+    // Define icon and color based on rating
+    IconData icon;
+    Color color = Theme.of(context).colorScheme.primary;
+
+    if (rating >= 9) {
+      icon = Icons.favorite;
+      color = Colors.pink;
+    } else if (rating >= 7) {
+      icon = Icons.thumb_up;
+      color = Colors.green;
+    } else if (rating >= 4) {
+      icon = Icons.thumbs_up_down;
+      color = Colors.orange;
+    } else {
+      icon = Icons.thumb_down;
+      color = Colors.red;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$rating/10',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }

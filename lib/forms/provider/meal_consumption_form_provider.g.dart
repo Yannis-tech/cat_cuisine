@@ -7,7 +7,7 @@ part of 'meal_consumption_form_provider.dart';
 // **************************************************************************
 
 String _$mealConsumptionFormHash() =>
-    r'b54a7fb99475b455db49dbaf05b9765ed03fe5be';
+    r'c305ccaca687038e4c8af98aefb961b145f29301';
 
 /// Copied from Dart SDK
 class _SystemHash {

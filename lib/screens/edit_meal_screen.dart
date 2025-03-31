@@ -9,10 +9,11 @@ import '../provider/food_database_provider.dart';
 
 class EditMealScreen extends ConsumerWidget {
   final MealModel? meal;
-
   const EditMealScreen({super.key, this.meal});
 
-  bool _hasChanges(MealFormState state) {
+  bool _hasChanges(AsyncValue<MealFormState> formState) {
+    if (!formState.hasValue) return false;
+    final state = formState.value!;
     return state.brand != null ||
         state.productLine != null ||
         state.sort != null ||
@@ -23,15 +24,15 @@ class EditMealScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final formState = ref.watch(mealFormProvider(meal));
+    final formStateAsync = ref.watch(mealFormProvider(meal));
     final brands = ref.watch(foodDataProvider);
 
     return PopScope(
-      canPop: false, // Prevent automatic pop
+      canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
 
-        if (!_hasChanges(formState)) {
+        if (!_hasChanges(formStateAsync)) {
           Navigator.of(context).pop();
           return;
         }
@@ -65,73 +66,74 @@ class EditMealScreen extends ConsumerWidget {
           title: Text(
               meal != null ? 'Mahlzeit bearbeiten' : 'Mahlzeit hinzufügen'),
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildDateTimePicker(context, ref, formState),
-              const SizedBox(height: 16),
-              brands.when(
-                data: (brandList) =>
-                    _buildBrandDropdown(context, ref, formState, brandList),
-                loading: () => const CircularProgressIndicator(),
-                error: (_, __) => const Text('Fehler beim Laden der Daten'),
-              ),
-              if (formState.brand != null) ...[
+        body: formStateAsync.when(
+          data: (formState) => SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildDateTimePicker(context, ref, formState),
                 const SizedBox(height: 16),
-                _buildProductLineDropdown(context, ref, formState),
-              ],
-              if (formState.productLine != null) ...[
-                const SizedBox(height: 16),
-                _buildSortDropdown(context, ref, formState),
-              ],
-              if (formState.sort != null) ...[
-                const SizedBox(height: 16),
-                _buildPackagingDropdown(context, ref, formState),
-              ],
-              if (formState.packaging != null) ...[
-                const SizedBox(height: 16),
-                _buildPackagingSizeDropdown(context, ref, formState),
-              ],
-              const SizedBox(height: 24),
-              _buildPortionSizeField(context, ref, formState),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: formState.isSaving || !_isFormValid(formState)
-                    ? null
-                    : () => _saveMeal(context, ref),
-                child: formState.isSaving
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(meal != null
-                        ? 'Mahlzeit bearbeiten'
-                        : 'Mahlzeit hinzufügen'),
-              ),
-              // Show consumption section only when editing an existing meal
-              if (meal?.mealId != null) ...[
+                brands.when(
+                  data: (brandList) =>
+                      _buildBrandDropdown(context, ref, formState, brandList),
+                  loading: () => const CircularProgressIndicator(),
+                  error: (_, __) => const Text('Fehler beim Laden der Daten'),
+                ),
+                if (formState.brand != null) ...[
+                  const SizedBox(height: 16),
+                  _buildProductLineDropdown(context, ref, formState),
+                ],
+                if (formState.productLine != null) ...[
+                  const SizedBox(height: 16),
+                  _buildSortDropdown(context, ref, formState),
+                ],
+                if (formState.sort != null) ...[
+                  const SizedBox(height: 16),
+                  _buildPackagingDropdown(context, ref, formState),
+                ],
+                if (formState.packaging != null) ...[
+                  const SizedBox(height: 16),
+                  _buildPackagingSizeDropdown(context, ref, formState),
+                ],
+                const SizedBox(height: 24),
+                _buildPortionSizeField(context, ref, formState),
                 const SizedBox(height: 32),
-                const Divider(),
-                const SizedBox(height: 16),
-                Text(
-                  'Bewertungen',
-                  style: Theme.of(context).textTheme.titleMedium,
+                ElevatedButton(
+                  onPressed: formState.isSaving || !_isFormValid(formStateAsync)
+                      ? null
+                      : () => _saveMeal(context, ref),
+                  child: formState.isSaving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(meal != null
+                          ? 'Mahlzeit bearbeiten'
+                          : 'Mahlzeit hinzufügen'),
                 ),
-                const SizedBox(height: 16),
-                _buildConsumptionList(context, ref, meal),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      _showAddConsumptionDialog(context, meal!.mealId!),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Bewertung hinzufügen'),
-                ),
+                if (meal?.mealId != null) ...[
+                  const SizedBox(height: 32),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  Text('Bewertungen',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 16),
+                  _buildConsumptionList(context, ref, meal),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        _showAddConsumptionDialog(context, meal!.mealId!),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Bewertung hinzufügen'),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Center(child: Text('Error: $error')),
         ),
       ),
     );
@@ -269,7 +271,15 @@ class EditMealScreen extends ConsumerWidget {
       ),
       keyboardType: TextInputType.number,
       controller: state.portionController,
-      onChanged: (value) {
+      onEditingComplete: () {
+        final size = int.tryParse(state.portionController.text);
+        if (size != null) {
+          ref.read(mealFormProvider(meal).notifier).setPortionSize(size);
+        }
+        FocusScope.of(context).unfocus(); // Optional: hide keyboard when done
+      },
+      // Add this to ensure value is saved when focus is lost
+      onFieldSubmitted: (value) {
         final size = int.tryParse(value);
         if (size != null) {
           ref.read(mealFormProvider(meal).notifier).setPortionSize(size);
@@ -371,14 +381,16 @@ class EditMealScreen extends ConsumerWidget {
     );
   }
 
-  bool _isFormValid(MealFormState state) {
-    return state.brand != null &&
-        state.productLine != null &&
-        state.sort != null &&
-        state.packaging != null &&
-        state.packagingSize != null &&
-        state.timeOfDay != null &&
-        state.portionSize != null;
+  bool _isFormValid(AsyncValue<MealFormState> state) {
+    if (!state.hasValue) return false;
+    final formState = state.value!;
+    return formState.brand != null &&
+        formState.productLine != null &&
+        formState.sort != null &&
+        formState.packaging != null &&
+        formState.packagingSize != null &&
+        formState.timeOfDay != null &&
+        formState.portionSize != null;
   }
 
   void _saveMeal(BuildContext context, WidgetRef ref) async {
@@ -392,7 +404,6 @@ class EditMealScreen extends ConsumerWidget {
         const SnackBar(content: Text('Mahlzeit erfolgreich gespeichert')),
       );
 
-      // Only show prompt for new meals
       if (meal == null && saveMealResult.mealId != null) {
         final shouldAddConsumption = await showDialog<bool>(
           context: context,
@@ -413,28 +424,28 @@ class EditMealScreen extends ConsumerWidget {
           ),
         );
 
-        if (shouldAddConsumption == true) {
-          if (context.mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) =>
-                    EditMealConsumptionScreen(mealId: saveMealResult.mealId!),
-              ),
-            );
-            return;
-          }
+        if (shouldAddConsumption == true && context.mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) =>
+                  EditMealConsumptionScreen(mealId: saveMealResult.mealId!),
+            ),
+          );
+          return;
         }
       }
-
       Navigator.of(context).pop();
     } else {
-      final error = ref.read(mealFormProvider(meal)).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Ein unbekannter Fehler ist aufgetreten'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      final formState = ref.read(mealFormProvider(meal));
+      if (formState.hasValue) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(formState.value!.error ??
+                'Ein unbekannter Fehler ist aufgetreten'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

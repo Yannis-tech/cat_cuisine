@@ -1,6 +1,6 @@
 import 'package:cat_cuisine/forms/provider/meal_consumption_form_provider.dart';
 import 'package:cat_cuisine/models/meal_model.dart';
-import 'package:cat_cuisine/provider/food_database_provider.dart';
+import 'package:cat_cuisine/models/provider/food_database_provider.dart';
 import 'package:cat_cuisine/models/provider/meal_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -29,6 +29,7 @@ class MealFormState {
 
   final bool isSaving;
   final String? error;
+  final bool isLoading;
 
   MealFormState({
     this.brand,
@@ -48,49 +49,54 @@ class MealFormState {
     this.isLoadingPackagingSizes = false,
     this.isSaving = false,
     this.error,
+    this.isLoading = false,
   }) : portionController =
             TextEditingController(text: portionSize?.toString() ?? '');
 
-  MealFormState copyWith(
-      {String? brand,
-      String? productLine,
-      String? sort,
-      String? packaging,
-      String? packagingSize,
-      DateTime? timeOfDay,
-      int? portionSize,
-      List<String>? availableProductLines,
-      List<String>? availableSorts,
-      List<String>? availablePackagings,
-      List<String>? availablePackagingSizes,
-      bool? isLoadingProductLines,
-      bool? isLoadingSorts,
-      bool? isLoadingPackagings,
-      bool? isLoadingPackagingSizes,
-      bool? isSaving,
-      String? error}) {
+  MealFormState copyWith({
+    String? brand,
+    String? productLine,
+    String? sort,
+    String? packaging,
+    String? packagingSize,
+    DateTime? timeOfDay,
+    int? portionSize,
+    List<String>? availableProductLines,
+    List<String>? availableSorts,
+    List<String>? availablePackagings,
+    List<String>? availablePackagingSizes,
+    bool? isLoadingProductLines,
+    bool? isLoadingSorts,
+    bool? isLoadingPackagings,
+    bool? isLoadingPackagingSizes,
+    bool? isSaving,
+    String? error,
+    bool? isLoading,
+  }) {
     return MealFormState(
-        brand: brand ?? this.brand,
-        productLine: productLine ?? this.productLine,
-        sort: sort ?? this.sort,
-        packaging: packaging ?? this.packaging,
-        packagingSize: packagingSize ?? this.packagingSize,
-        timeOfDay: timeOfDay ?? this.timeOfDay,
-        portionSize: portionSize ?? this.portionSize,
-        availableProductLines:
-            availableProductLines ?? this.availableProductLines,
-        availableSorts: availableSorts ?? this.availableSorts,
-        availablePackagings: availablePackagings ?? this.availablePackagings,
-        availablePackagingSizes:
-            availablePackagingSizes ?? this.availablePackagingSizes,
-        isLoadingProductLines:
-            isLoadingProductLines ?? this.isLoadingProductLines,
-        isLoadingSorts: isLoadingSorts ?? this.isLoadingSorts,
-        isLoadingPackagings: isLoadingPackagings ?? this.isLoadingPackagings,
-        isLoadingPackagingSizes:
-            isLoadingPackagingSizes ?? this.isLoadingPackagingSizes,
-        isSaving: isSaving ?? this.isSaving,
-        error: error ?? this.error);
+      brand: brand ?? this.brand,
+      productLine: productLine ?? this.productLine,
+      sort: sort ?? this.sort,
+      packaging: packaging ?? this.packaging,
+      packagingSize: packagingSize ?? this.packagingSize,
+      timeOfDay: timeOfDay ?? this.timeOfDay,
+      portionSize: portionSize ?? this.portionSize,
+      availableProductLines:
+          availableProductLines ?? this.availableProductLines,
+      availableSorts: availableSorts ?? this.availableSorts,
+      availablePackagings: availablePackagings ?? this.availablePackagings,
+      availablePackagingSizes:
+          availablePackagingSizes ?? this.availablePackagingSizes,
+      isLoadingProductLines:
+          isLoadingProductLines ?? this.isLoadingProductLines,
+      isLoadingSorts: isLoadingSorts ?? this.isLoadingSorts,
+      isLoadingPackagings: isLoadingPackagings ?? this.isLoadingPackagings,
+      isLoadingPackagingSizes:
+          isLoadingPackagingSizes ?? this.isLoadingPackagingSizes,
+      isSaving: isSaving ?? this.isSaving,
+      error: error ?? this.error,
+      isLoading: isLoading ?? this.isLoading,
+    );
   }
 
   MealModel toMealModel() {
@@ -112,8 +118,8 @@ class MealFormState {
 @riverpod
 class MealForm extends _$MealForm {
   @override
-  MealFormState build(MealModel? initialMeal) {
-    return MealFormState(
+  FutureOr<MealFormState> build(MealModel? initialMeal) async {
+    final initialState = MealFormState(
       brand: initialMeal?.brandName,
       productLine: initialMeal?.productLine,
       sort: initialMeal?.sortName,
@@ -121,139 +127,147 @@ class MealForm extends _$MealForm {
       packagingSize: initialMeal?.packagingSize.toString(),
       timeOfDay: initialMeal?.timeOfDay,
       portionSize: initialMeal?.portionSize,
+      isLoading: true,
+    );
+
+    final foodData = await ref.read(foodDataProvider.future);
+    return initialState.copyWith(
+      availableProductLines: foodData.map((e) => e.productLine).toSet().toList()
+        ..sort(),
+      availableSorts: foodData.map((e) => e.sort).toSet().toList()..sort(),
+      availablePackagings: foodData.map((e) => e.packaging).toSet().toList()
+        ..sort(),
+      availablePackagingSizes:
+          foodData.map((e) => e.packagingSize).toSet().toList()..sort(),
+      isLoading: false,
     );
   }
 
-  Future<void> setBrand(String brand) async {
-    final productLines =
-        await ref.read(foodDataProvider.notifier).getProductLines(brand);
+  Future<void> updateFilters(MealFormState newState) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final foodData = await ref.read(foodDataProvider.future);
+      final filteredItems = foodData
+          .where((item) =>
+              (newState.brand == null || item.brand == newState.brand) &&
+              (newState.productLine == null ||
+                  item.productLine == newState.productLine) &&
+              (newState.sort == null || item.sort == newState.sort) &&
+              (newState.packaging == null ||
+                  item.packaging == newState.packaging) &&
+              (newState.packagingSize == null ||
+                  item.packagingSize == newState.packagingSize))
+          .toList();
 
-    state = state.copyWith(
-      brand: brand,
-      productLine: null,
-      sort: null,
-      packaging: null,
-      packagingSize: null,
-      availableProductLines: productLines,
-      availableSorts: [],
-      availablePackagings: [],
-      availablePackagingSizes: [],
-    );
+      return newState.copyWith(
+        availableProductLines:
+            filteredItems.map((e) => e.productLine).toSet().toList()..sort(),
+        availableSorts: filteredItems.map((e) => e.sort).toSet().toList()
+          ..sort(),
+        availablePackagings:
+            filteredItems.map((e) => e.packaging).toSet().toList()..sort(),
+        availablePackagingSizes:
+            filteredItems.map((e) => e.packagingSize).toSet().toList()..sort(),
+        isLoading: false,
+      );
+    });
+  }
 
-    // Auto-select if only one option available
-    if (productLines.length == 1) {
-      await setProductLine(productLines[0]);
+  Future<void> setBrand(String? brand) async {
+    if (state.hasValue) {
+      final newState = state.value!.copyWith(brand: brand);
+      await updateFilters(newState);
+
+      if (brand != null &&
+          !state.value!.availableProductLines
+              .contains(state.value!.productLine)) {
+        await setProductLine(null);
+      }
     }
   }
 
-  Future<void> setProductLine(String productLine) async {
-    if (state.brand == null) return;
+  Future<void> setProductLine(String? productLine) async {
+    if (state.hasValue) {
+      final newState = state.value!.copyWith(productLine: productLine);
+      await updateFilters(newState);
 
-    final sorts = await ref
-        .read(foodDataProvider.notifier)
-        .getSorts(state.brand!, productLine);
-
-    state = state.copyWith(
-      productLine: productLine,
-      sort: null,
-      packaging: null,
-      packagingSize: null,
-      availableSorts: sorts,
-      availablePackagings: [],
-      availablePackagingSizes: [],
-    );
-
-    // Auto-select if only one option available
-    if (sorts.length == 1) {
-      await setSort(sorts[0]);
+      if (productLine != null &&
+          !state.value!.availableSorts.contains(state.value!.sort)) {
+        await setSort(null);
+      }
     }
   }
 
-  Future<void> setSort(String sort) async {
-    if (state.brand == null || state.productLine == null) return;
+  Future<void> setSort(String? sort) async {
+    if (state.hasValue) {
+      final newState = state.value!.copyWith(sort: sort);
+      await updateFilters(newState);
 
-    final packagings = await ref
-        .read(foodDataProvider.notifier)
-        .getPackagings(state.brand!, state.productLine!, sort);
-
-    state = state.copyWith(
-      sort: sort,
-      packaging: null,
-      packagingSize: null,
-      availablePackagings: packagings,
-      availablePackagingSizes: [],
-    );
-
-    // Auto-select if only one option available
-    if (packagings.length == 1) {
-      await setPackaging(packagings[0]);
+      if (sort != null &&
+          !state.value!.availablePackagings.contains(state.value!.packaging)) {
+        await setPackaging(null);
+      }
     }
   }
 
-  Future<void> setPackaging(String packaging) async {
-    if (state.brand == null || state.productLine == null || state.sort == null)
-      return;
+  Future<void> setPackaging(String? packaging) async {
+    if (state.hasValue) {
+      final newState = state.value!.copyWith(packaging: packaging);
+      await updateFilters(newState);
 
-    final sizes = await ref.read(foodDataProvider.notifier).getPackagingSizes(
-        state.brand!, state.productLine!, state.sort!, packaging);
-
-    state = state.copyWith(
-      packaging: packaging,
-      packagingSize: null,
-      availablePackagingSizes: sizes,
-    );
-
-    // Auto-select if only one option available
-    if (sizes.length == 1) {
-      setPackagingSize(sizes[0]);
+      if (packaging != null &&
+          !state.value!.availablePackagingSizes
+              .contains(state.value!.packagingSize)) {
+        await setPackagingSize(null);
+      }
     }
   }
 
-  void setPackagingSize(dynamic value) {
-    if (value is String) {
-      state = state.copyWith(packagingSize: value);
-    } else if (value is int) {
-      state = state.copyWith(packagingSize: '$value g');
+  Future<void> setPackagingSize(String? packagingSize) async {
+    if (state.hasValue) {
+      final newState = state.value!.copyWith(packagingSize: packagingSize);
+      await updateFilters(newState);
     }
   }
 
   void setTimeOfDay(DateTime time) {
-    state = state.copyWith(timeOfDay: time);
+    if (state.hasValue) {
+      state = AsyncValue.data(state.value!.copyWith(timeOfDay: time));
+    }
   }
 
   void setPortionSize(int size) {
-    if (size > 0 && size != state.portionSize) {
-      state = state.copyWith(portionSize: size);
+    if (state.hasValue && size > 0 && size != state.value!.portionSize) {
+      state = AsyncValue.data(state.value!.copyWith(portionSize: size));
     }
   }
 
   Future<SaveMealResult> saveMeal() async {
-    try {
-      state = state.copyWith(isSaving: true, error: null);
+    if (!state.hasValue)
+      return SaveMealResult(success: false, error: 'Invalid state');
 
-      final mealModel = state.toMealModel();
-      String? newMealId;
+    try {
+      state =
+          AsyncValue.data(state.value!.copyWith(isSaving: true, error: null));
+      final mealModel = state.value!.toMealModel();
 
       if (initialMeal?.mealId != null) {
-        // Update existing meal
         final updatedMeal = await ref.read(mealsProvider.notifier).updateMeal(
               mealModel.copyWith(mealId: initialMeal!.mealId),
             );
-        newMealId = updatedMeal.mealId;
-      } else {
-        // Create new meal
-        final createdMeal =
-            await ref.read(mealsProvider.notifier).createMeal(mealModel);
-        newMealId = createdMeal.mealId;
+        state = AsyncValue.data(state.value!.copyWith(isSaving: false));
+        return SaveMealResult(success: true, mealId: updatedMeal.mealId);
       }
 
-      state = state.copyWith(isSaving: false);
-      return SaveMealResult(success: true, mealId: newMealId);
+      final createdMeal =
+          await ref.read(mealsProvider.notifier).createMeal(mealModel);
+      state = AsyncValue.data(state.value!.copyWith(isSaving: false));
+      return SaveMealResult(success: true, mealId: createdMeal.mealId);
     } catch (e) {
-      state = state.copyWith(
+      state = AsyncValue.data(state.value!.copyWith(
         isSaving: false,
         error: 'Fehler beim Speichern: $e',
-      );
+      ));
       return SaveMealResult(success: false, error: e.toString());
     }
   }
